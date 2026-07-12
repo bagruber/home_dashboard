@@ -27,6 +27,7 @@ export function Dashboard() {
   const { widgets, applyLayoutChange, resetLayout } = useLayout();
   const [editMode, setEditMode] = useState(false);
   const [maximizedId, setMaximizedId] = useState<string | null>(null);
+  const [maxClosing, setMaxClosing] = useState(false);
   const [width, setWidth] = useState<number>(() => window.innerWidth);
   const [viewportH, setViewportH] = useState<number>(() => window.innerHeight);
   const [foldTop, setFoldTop] = useState<number | null>(null);
@@ -53,13 +54,23 @@ export function Dashboard() {
     setFoldTop(Math.max(0, viewportH - (rect.top + window.scrollY)));
   }, [editMode, viewportH, width]);
 
+  // Close with a short exit animation before unmounting the overlay.
+  const closeMaximized = () => {
+    setMaxClosing(true);
+    window.setTimeout(() => {
+      setMaximizedId(null);
+      setMaxClosing(false);
+    }, 160);
+  };
+
   useEffect(() => {
     if (!maximizedId) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setMaximizedId(null);
+      if (e.key === "Escape") closeMaximized();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [maximizedId]);
 
   const layout: Layout[] = widgets.map((w) => w.layout);
@@ -161,8 +172,14 @@ export function Dashboard() {
       </main>
 
       {maximized && maximizedDef && (
-        <div className="fixed inset-0 z-40 bg-canvas p-4 overlay-in">
-          <div className="relative h-full w-full rounded-2xl bg-surface ring-1 ring-white/5 overflow-hidden">
+        <div
+          className={`fixed inset-0 z-40 bg-black/75 backdrop-blur-sm p-6 md:p-10 ${maxClosing ? "backdrop-out" : "backdrop-in"}`}
+          onClick={closeMaximized}
+        >
+          <div
+            className={`relative h-full w-full rounded-2xl bg-surface ring-1 ring-white/10 shadow-2xl overflow-hidden ${maxClosing ? "panel-out" : "panel-in"}`}
+            onClick={(e) => e.stopPropagation()}
+          >
             <div
               className="h-full w-full"
               style={(() => {
@@ -177,12 +194,11 @@ export function Dashboard() {
             </div>
             <button
               type="button"
-              onClick={() => setMaximizedId(null)}
-              aria-label={t.edit.closeMaximize}
-              title={t.edit.closeMaximize}
-              className="absolute bottom-2 right-2 z-10 p-3 text-ink-mid hover:text-ink-high bg-white/5 hover:bg-white/10 rounded-full transition"
+              onClick={closeMaximized}
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2.5 px-7 py-3.5 min-h-[3.25rem] rounded-full bg-white/10 hover:bg-white/[0.16] text-ink-high text-base font-medium shadow-lg backdrop-blur-md ring-1 ring-white/15 transition"
             >
               <CollapseIcon />
+              {t.edit.closeMaximize}
             </button>
           </div>
         </div>

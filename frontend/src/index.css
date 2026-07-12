@@ -72,19 +72,40 @@ button:active {
   animation: check-pop 0.18s ease-out;
 }
 
-/* Fullscreen widget overlay eases in instead of snapping. */
-@keyframes overlay-in {
+/* Fullscreen widget: backdrop fades, panel scales — both directions. */
+@keyframes backdrop-in {
   from {
     opacity: 0;
-    transform: scale(0.985);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
   }
 }
-.overlay-in {
-  animation: overlay-in 0.16s ease-out;
+@keyframes backdrop-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.93);
+  }
+}
+@keyframes panel-out {
+  to {
+    opacity: 0;
+    transform: scale(0.93);
+  }
+}
+.backdrop-in {
+  animation: backdrop-in 0.2s ease-out;
+}
+.backdrop-out {
+  animation: backdrop-out 0.16s ease-in forwards;
+}
+.panel-in {
+  animation: panel-in 0.2s ease-out;
+}
+.panel-out {
+  animation: panel-out 0.16s ease-in forwards;
 }
 
 /* New list rows fade in; existing rows keep their DOM node (stable keys), so
@@ -105,8 +126,13 @@ button:active {
 
 @media (prefers-reduced-motion: reduce) {
   .check-pop,
-  .overlay-in,
+  .backdrop-in,
+  .panel-in,
   .row-in {
     animation: none;
+  }
+  .backdrop-out,
+  .panel-out {
+    animation-duration: 0.01s;
   }
 }
