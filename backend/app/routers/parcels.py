@@ -179,12 +179,14 @@ async def _refresh_17track(parcels: list[dict[str, Any]]) -> None:
     quota), then fetch all statuses in a single call."""
     unregistered = [p for p in parcels if not p.get("t17Registered")]
     if unregistered:
-        ok = await seventeentrack.register([p["trackingNumber"] for p in unregistered])
+        ok = await seventeentrack.register(
+            [(p["trackingNumber"], p.get("carrier")) for p in unregistered]
+        )
         for p in unregistered:
             if p["trackingNumber"] in ok:
                 p["t17Registered"] = True
-    numbers = [p["trackingNumber"] for p in parcels if p.get("t17Registered")]
-    infos = await seventeentrack.get_track_info(numbers)
+    entries = [(p["trackingNumber"], p.get("carrier")) for p in parcels if p.get("t17Registered")]
+    infos = await seventeentrack.get_track_info(entries)
     for p in parcels:
         info = infos.get(p["trackingNumber"])
         if info is None:

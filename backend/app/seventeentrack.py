@@ -20,6 +20,27 @@ _ALREADY_REGISTERED = -18019901
 # gettrackinfo accepts at most 40 numbers per call — far above household volume.
 MAX_BATCH = 40
 
+# Our carrier ids -> 17TRACK carrier keys (res.17track.net apicarrier list).
+# Auto-detection fails for several German formats (e.g. Hermes), so the hint
+# from the widget's carrier picker is passed along explicitly.
+CARRIER_CODES: dict[str, int] = {
+    "dhl": 7041,  # DHL Paket (DE)
+    "hermes": 100031,  # Hermes (DE)
+    "dpd": 100007,  # DPD (DE)
+    "gls": 100005,
+    "ups": 100002,
+    "amazon": 100308,  # Amazon Shipping + Amazon MCF
+    # "other": no hint — let 17TRACK auto-detect.
+}
+
+
+def _entry(number: str, carrier: str | None) -> dict[str, Any]:
+    item: dict[str, Any] = {"number": number}
+    code = CARRIER_CODES.get(carrier or "")
+    if code:
+        item["carrier"] = code
+    return item
+
 
 def configured() -> bool:
     return bool(settings.seventeentrack_api_key)
@@ -43,12 +64,12 @@ async def _post(path: str, payload: list[dict[str, Any]]) -> dict[str, Any] | No
         return None
 
 
-async def register(numbers: list[str]) -> set[str]:
-    """Register numbers for tracking. Returns the ones that are now registered
-    (treating 'already registered' as success)."""
-    if not configured() or not numbers:
+async def register(entries: list[tuple[str, str | None]]) -> set[str]:
+    """Register (number, carrier) pairs for tracking. Returns the numbers that
+    are now registered (treating 'already registered' as success)."""
+    if not configured() or not entries:
         return set()
-    data = await _post("/register", [{"number": n} for n in numbers])
+    data = await _post("/register", [_entry(n, c) for n, c in entries])
     if data is None:
         return set()
     body = data.get("data") or {}
@@ -59,11 +80,11 @@ async def register(numbers: list[str]) -> set[str]:
     return {n for n in ok if n}
 
 
-async def get_track_info(numbers: list[str]) -> dict[str, dict[str, Any]]:
+async def get_track_info(entries: list[tuple[str, str | None]]) -> dict[str, dict[str, Any]]:
     """Fetch tracking status for registered numbers. Returns number -> simplified info."""
-    if not configured() or not numbers:
+    if not configured() or not entries:
         return {}
-    data = await _post("/gettrackinfo", [{"number": n} for n in numbers[:MAX_BATCH]])
+    data = await _post("/gettrackinfo", [_entry(n, c) for n, c in entries[:MAX_BATCH]])
     if data is None:
         return {}
     out: dict[str, dict[str, Any]] = {}

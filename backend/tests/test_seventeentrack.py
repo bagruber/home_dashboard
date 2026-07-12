@@ -52,3 +52,11 @@ def test_simplify_dict_location_and_missing_event():
 
     empty = simplify({})
     assert empty == {"status": "unknown", "lastEvent": None, "estimatedDelivery": None}
+
+
+def test_entry_adds_carrier_hint_when_known():
+    from app.seventeentrack import _entry
+
+    assert _entry("70191181003337", "hermes") == {"number": "70191181003337", "carrier": 100031}
+    assert _entry("123456789", "other") == {"number": "123456789"}
+    assert _entry("123456789", None) == {"number": "123456789"}
