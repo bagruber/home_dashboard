@@ -19,6 +19,7 @@ from fastapi import APIRouter, HTTPException, Query
 from app import transitous
 from app.cache import TTLCache
 from app.config import settings
+from app.stations import clean_station_name
 from app.trains_fixtures import FIXTURES
 
 router = APIRouter()
@@ -41,18 +42,17 @@ _NORTH_KEYWORDS = (
     "passau",
     "regensburg",
     "plattling",
-    "neufahrn(niederbay)",
+    "neufahrn (niederbay)",
     "straubing",
     "nürnberg",
     "nuernberg",
     "hof hbf",
-    "hof(",
+    "hof (",
     # DELFI/Transitous headsigns can name the far terminus of the Regensburg
     # branch (e.g. "Schwandorf, ZOB am Bahnhof", "Weiden (Oberpf)").
     "schwandorf",
     "weiden",
     "cham (",
-    "cham(",
 )
 
 
@@ -205,13 +205,15 @@ def _group(deps: list[dict[str, Any]], stale: bool = False) -> dict[str, Any]:
         # Straße" would even match the Freising keyword).
         if (d.get("product") or "").lower() == "bus":
             continue
+        direction = clean_station_name(d.get("direction"))
         enriched = {
             **d,
-            "terminatesAtFreising": _terminates_at_freising(d.get("direction")),
+            "direction": direction,
+            "terminatesAtFreising": _terminates_at_freising(direction),
             "hasPowerSockets": d.get("hasPowerSockets", d.get("line") in settings.power_socket_lines),
             "hasWifi": d.get("hasWifi", d.get("line") in settings.wifi_lines),
         }
-        match _classify(d.get("direction")):
+        match _classify(direction):
             case "south":
                 south.append(enriched)
             case "north":
@@ -267,10 +269,10 @@ def _connection_from_leg(first: dict[str, Any], onward: dict[str, Any], final: d
     transfer = _transfer_minutes(first, onward)
     dest = onward.get("destination") or {}
     return {
-        "transferAt": (first.get("destination") or {}).get("name"),
+        "transferAt": clean_station_name((first.get("destination") or {}).get("name")),
         "line": line.get("name"),
         "product": line.get("product"),
-        "direction": onward.get("direction") or dest.get("name"),
+        "direction": clean_station_name(onward.get("direction") or dest.get("name")),
         "plannedWhen": onward.get("plannedDeparture"),
         "when": onward.get("departure"),
         "delayMinutes": _leg_delay_minutes(onward, "departureDelay"),
@@ -310,7 +312,7 @@ def _apply_terminus_journeys(deps: list[dict[str, Any]], journeys: list[dict[str
         if not trip_id:
             continue
         final = legs[-1]
-        dest_name = (final.get("destination") or {}).get("name") or "München Hbf"
+        dest_name = clean_station_name((final.get("destination") or {}).get("name")) or "München Hbf"
         info: dict[str, Any] = {"terminusArrival": _arrival_entry(dest_name, final)}
         if len(legs) >= 2:
             info["connection"] = _connection_from_leg(legs[0], legs[1], final)

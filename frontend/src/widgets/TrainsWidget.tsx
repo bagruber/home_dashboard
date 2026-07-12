@@ -322,13 +322,13 @@ function DepartureRow({ dep, nowMs }: { dep: Departure; nowMs: number }) {
   );
 }
 
-/** Shorten common terminus names so the arrival chain stays compact. */
+/** Shorten common terminus names so the arrival chain stays compact.
+ *  (The backend already normalises names; this only compacts for display.) */
 function shortPlace(place: string): string {
   return place
     .replace(/münchen flughafen terminal/i, "Flughafen")
     .replace(/flughafen münchen/i, "Flughafen")
-    .replace(/\(bay\)hbf/i, "")
-    .replace(/ hauptbahnhof/i, " Hbf")
+    .replace(/\s*\(bay\)\s*hbf/i, "")
     .trim();
 }
 
