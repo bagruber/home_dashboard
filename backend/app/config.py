@@ -48,6 +48,9 @@ class Settings:
     # Without a key, DHL parcels are stored but not auto-refreshed — the widget still
     # offers a deep-link to dhl.de for manual checks.
     dhl_api_key: str | None = os.environ.get("DASHBOARD_DHL_API_KEY") or None
+    # 17TRACK (api.17track.net) — multi-carrier tracking, free one-time quota.
+    # When set, it handles all carriers; the DHL key becomes unnecessary.
+    seventeentrack_api_key: str | None = os.environ.get("DASHBOARD_17TRACK_API_KEY") or None
     parcel_min_refresh_seconds: float = float(
         os.environ.get("DASHBOARD_PARCEL_MIN_REFRESH_SECONDS", "600")
     )

@@ -8,7 +8,7 @@ import httpx
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
-from app import storage
+from app import seventeentrack, storage
 from app.config import settings
 
 router = APIRouter()
@@ -27,7 +27,9 @@ _TRACKING_URLS: dict[str, str] = {
     "other": "",
 }
 
-ParcelStatus = Literal["unknown", "in_transit", "out_for_delivery", "delivered", "exception"]
+ParcelStatus = Literal[
+    "unknown", "in_transit", "out_for_delivery", "available_for_pickup", "delivered", "exception"
+]
 _REFRESH_LOCK = asyncio.Lock()
 
 
@@ -59,6 +61,7 @@ def _migrate(p: dict[str, Any]) -> dict[str, Any]:
         "status": p.get("status", "unknown"),
         "lastEvent": p.get("lastEvent"),
         "estimatedDelivery": p.get("estimatedDelivery"),
+        "t17Registered": bool(p.get("t17Registered", False)),
         "url": _tracking_url(carrier, tn),
     }
 
@@ -81,7 +84,11 @@ async def list_parcels(refresh: bool = False) -> dict[str, Any]:
         await _refresh_due(items)
         await _save(items)
         items = [_migrate(p) for p in items]
-    return {"items": items, "dhlConfigured": bool(settings.dhl_api_key)}
+    return {
+        "items": items,
+        "dhlConfigured": bool(settings.dhl_api_key),
+        "t17Configured": seventeentrack.configured(),
+    }
 
 
 @router.post("")
@@ -97,9 +104,10 @@ async def add_parcel(parcel: NewParcel) -> dict[str, Any]:
         "status": "unknown",
         "lastEvent": None,
         "estimatedDelivery": None,
+        "t17Registered": False,
     }
     items.append(new)
-    # Try to fetch initial status immediately if the carrier supports it.
+    # Try to fetch initial status immediately if a tracking backend is configured.
     await _refresh_one(new, force=True)
     await _save(items)
     return _migrate(new)
@@ -108,11 +116,13 @@ async def add_parcel(parcel: NewParcel) -> dict[str, Any]:
 @router.delete("/{parcel_id}")
 async def delete_parcel(parcel_id: str) -> dict[str, str]:
     items = await _load()
-    before = len(items)
-    items = [p for p in items if p["id"] != parcel_id]
-    if len(items) == before:
+    found = next((p for p in items if p["id"] == parcel_id), None)
+    if found is None:
         raise HTTPException(status_code=404, detail="not found")
+    items = [p for p in items if p["id"] != parcel_id]
     await _save(items)
+    if found.get("t17Registered"):
+        await seventeentrack.delete([found["trackingNumber"]])
     return {"deleted": parcel_id}
 
 
@@ -148,15 +158,41 @@ async def _refresh_due(items: list[dict[str, Any]]) -> None:
     if not to_refresh:
         return
     async with _REFRESH_LOCK:
-        # Serial to be polite to upstream APIs; the volume is small.
-        for p in to_refresh:
-            await _refresh_one(p, force=False)
+        if seventeentrack.configured():
+            await _refresh_17track(to_refresh)
+        else:
+            # Serial to be polite to upstream APIs; the volume is small.
+            for p in to_refresh:
+                await _refresh_one(p, force=False)
 
 
 async def _refresh_one(parcel: dict[str, Any], force: bool) -> None:
-    if parcel["carrier"] == "dhl":
+    if seventeentrack.configured():
+        await _refresh_17track([parcel])
+    elif parcel["carrier"] == "dhl":
         await _refresh_dhl(parcel, force=force)
-    # Other carriers: storage-only for now (no public free tracking API).
+    # Without any tracking backend: storage-only, the widget deep-links instead.
+
+
+async def _refresh_17track(parcels: list[dict[str, Any]]) -> None:
+    """Batch-refresh via 17TRACK: register unregistered numbers once (consumes
+    quota), then fetch all statuses in a single call."""
+    unregistered = [p for p in parcels if not p.get("t17Registered")]
+    if unregistered:
+        ok = await seventeentrack.register([p["trackingNumber"] for p in unregistered])
+        for p in unregistered:
+            if p["trackingNumber"] in ok:
+                p["t17Registered"] = True
+    numbers = [p["trackingNumber"] for p in parcels if p.get("t17Registered")]
+    infos = await seventeentrack.get_track_info(numbers)
+    for p in parcels:
+        info = infos.get(p["trackingNumber"])
+        if info is None:
+            continue
+        p["status"] = info["status"]
+        p["lastEvent"] = info["lastEvent"] or p.get("lastEvent")
+        p["estimatedDelivery"] = info["estimatedDelivery"] or p.get("estimatedDelivery")
+        p["lastChecked"] = _now_iso()
 
 
 async def _refresh_dhl(parcel: dict[str, Any], force: bool) -> None:

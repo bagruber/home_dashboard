@@ -37,18 +37,28 @@ Then set the env var before starting the backend:
 set DASHBOARD_DB_REST_BASE_URL=http://localhost:3000
 ```
 
-### DHL Sendungsverfolgung (live parcel status)
+### 17TRACK Sendungsverfolgung (live parcel status, all carriers)
 
-Without a key, parcels are stored and the widget deep-links to dhl.de. To enable
-automatic status updates:
+Without a key, parcels are stored and the widget deep-links to the carrier's
+tracking page. To enable automatic status updates for DHL, Hermes, DPD, GLS,
+UPS and Amazon in one go:
 
-1. Sign up at [developer.dhl.com](https://developer.dhl.com).
-2. Create an app and subscribe to the **Shipment Tracking - Unified** product.
-3. Set the env var:
+1. Sign up at [api.17track.net](https://api.17track.net) (free tier: one-time
+   quota of ~200 tracking numbers, plenty for a household).
+2. Copy the security key from the dashboard ("Settings → Security Key").
+3. Put it in `backend/.env`:
 
-```bat
-set DASHBOARD_DHL_API_KEY=your_key_here
 ```
+DASHBOARD_17TRACK_API_KEY=your_key_here
+```
+
+Numbers are registered with 17TRACK when a parcel is added (this consumes
+quota) and removed again when the parcel is deleted. Carrier detection is
+automatic; refreshes are batched into a single API call.
+
+The legacy `DASHBOARD_DHL_API_KEY` (DHL "Shipment Tracking - Unified") is
+still supported as a DHL-only fallback, but DHL grants keys to business
+accounts only — 17TRACK is the practical choice.
 
 ### DWD weather warnings
 

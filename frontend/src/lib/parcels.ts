@@ -1,4 +1,10 @@
-export type ParcelStatus = "unknown" | "in_transit" | "out_for_delivery" | "delivered" | "exception";
+export type ParcelStatus =
+  | "unknown"
+  | "in_transit"
+  | "out_for_delivery"
+  | "available_for_pickup"
+  | "delivered"
+  | "exception";
 export type Carrier = "dhl" | "hermes" | "dpd" | "ups" | "gls" | "amazon" | "other";
 
 export interface ParcelEvent {
@@ -23,6 +29,8 @@ export interface Parcel {
 export interface ParcelsResponse {
   items: Parcel[];
   dhlConfigured: boolean;
+  /** True when the 17TRACK multi-carrier backend is configured. */
+  t17Configured?: boolean;
 }
 
 export const CARRIERS: { id: Carrier; label: string }[] = [

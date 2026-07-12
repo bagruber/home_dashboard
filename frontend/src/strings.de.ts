@@ -93,13 +93,15 @@ export const t = {
         unknown: "Status unbekannt",
         in_transit: "unterwegs",
         out_for_delivery: "in Zustellung",
+        available_for_pickup: "abholbereit",
         delivered: "zugestellt",
         exception: "Problem",
       },
       eta: (hhmm: string) => `Voraussichtlich ${hhmm}`,
       lastChecked: (mins: number) =>
         mins < 1 ? "gerade geprüft" : mins < 60 ? `vor ${mins} min geprüft` : `vor ${Math.floor(mins / 60)} h geprüft`,
-      dhlHint: "DHL-Auto-Update inaktiv. Setze DASHBOARD_DHL_API_KEY für Live-Status.",
+      trackingHint:
+        "Auto-Update inaktiv. Setze DASHBOARD_17TRACK_API_KEY (alle Versanddienste) für Live-Status.",
     },
     todos: {
       title: "Aufgaben",

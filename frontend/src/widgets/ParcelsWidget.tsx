@@ -22,6 +22,8 @@ function statusClass(s: ParcelStatus): string {
       return "bg-person-papa text-white";
     case "out_for_delivery":
       return "bg-landshut text-black";
+    case "available_for_pickup":
+      return "bg-freising text-black";
     case "in_transit":
       return "bg-white/15 text-ink-high";
     case "exception":
@@ -127,8 +129,8 @@ export function ParcelsWidget() {
         ))}
       </div>
 
-      {data && !data.dhlConfigured && items.some((p) => p.carrier === "dhl") && (
-        <div className="text-ink-low text-[11px] italic leading-snug">{t.widgets.parcels.dhlHint}</div>
+      {data && !data.t17Configured && !data.dhlConfigured && items.length > 0 && (
+        <div className="text-ink-low text-[11px] italic leading-snug">{t.widgets.parcels.trackingHint}</div>
       )}
     </div>
   );
