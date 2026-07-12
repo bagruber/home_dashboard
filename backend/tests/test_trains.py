@@ -182,3 +182,36 @@ def test_dedupe_prefers_enriched_entry():
     other = {"line": "RE2", "plannedWhen": _iso("17:41"), "direction": "München Hbf", "tripId": "c"}
     out = _dedupe([plain, rich, other])
     assert [d["tripId"] for d in out] == ["c", "b"]
+
+
+def test_classify_regensburg_branch_termini():
+    # DELFI headsigns name the far terminus, sometimes in bus-stop notation.
+    assert _classify("Schwandorf, ZOB am Bahnhof") == "north"
+    assert _classify("Weiden (Oberpf)") == "north"
+    assert _classify("Cham (Oberpf)") == "north"
+
+
+def test_drop_departed_keeps_upcoming_and_unknown_times():
+    from datetime import datetime, timedelta, timezone
+
+    from app.routers.trains import _drop_departed
+
+    now = datetime.now(timezone.utc)
+    gone = {"when": (now - timedelta(minutes=5)).isoformat()}
+    just_left = {"when": (now - timedelta(seconds=30)).isoformat()}
+    soon = {"when": (now + timedelta(minutes=3)).isoformat()}
+    unknown = {"when": None, "plannedWhen": None}
+    out = _drop_departed([gone, just_left, soon, unknown])
+    assert gone not in out
+    assert just_left in out  # within the 90s grace window
+    assert soon in out
+    assert unknown in out
+
+
+def test_group_drops_buses_even_with_matching_keywords():
+    deps = [
+        {"line": "688", "product": "bus", "direction": "Zolling, Freisinger Straße"},
+        {"line": "RE2", "product": "regional_rail", "direction": "München Hbf"},
+    ]
+    grouped = _group(deps)
+    assert [d["line"] for d in grouped["south"]] == ["RE2"]

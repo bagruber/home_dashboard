@@ -79,9 +79,11 @@ async def cached_departures(results: int) -> dict[str, Any]:
     if cached is not None:
         return cached
     try:
+        # Headroom over the requested count: the board also contains city buses
+        # that get filtered out during direction classification.
         data = await _get(
             "/api/v1/stoptimes",
-            {"stopId": settings.transitous_moosburg_id, "n": results},
+            {"stopId": settings.transitous_moosburg_id, "n": min(results + 10, 40)},
         )
     except (httpx.HTTPError, HTTPException):
         stale = _departures_cache.get_stale(key)

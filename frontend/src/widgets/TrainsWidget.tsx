@@ -73,7 +73,7 @@ function targetsOf(dep: Departure): Set<Target> {
 // Behind Landshut the line splits: RE3 continues towards Plattling/Passau,
 // RE2/RE22/RE25 towards Regensburg. When showing two Landshut trains, prefer
 // one from each branch.
-const REGENSBURG_BRANCH = /regensburg|hof|nürnberg|nuernberg/i;
+const REGENSBURG_BRANCH = /regensburg|hof|nürnberg|nuernberg|schwandorf|weiden|cham/i;
 
 function minimalPicks(deps: Departure[], perTarget: 1 | 2): Departure[] {
   const sorted = [...deps].sort((a, b) => {

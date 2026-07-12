@@ -47,6 +47,12 @@ _NORTH_KEYWORDS = (
     "nuernberg",
     "hof hbf",
     "hof(",
+    # DELFI/Transitous headsigns can name the far terminus of the Regensburg
+    # branch (e.g. "Schwandorf, ZOB am Bahnhof", "Weiden (Oberpf)").
+    "schwandorf",
+    "weiden",
+    "cham (",
+    "cham(",
 )
 
 
@@ -157,9 +163,10 @@ async def connections(
 
     # Transitous aggregates multiple GTFS feeds that can contain the same train
     # twice under different tripIds. Dedupe after enrichment, keeping the entry
-    # that got arrivals/connection data attached.
-    grouped["south"] = _dedupe(grouped["south"])
-    grouped["north"] = _dedupe(grouped["north"])
+    # that got arrivals/connection data attached. Then drop trains that have
+    # already left (cached boards can lag behind by up to the TTL).
+    grouped["south"] = _drop_departed(_dedupe(grouped["south"]))
+    grouped["north"] = _drop_departed(_dedupe(grouped["north"]))
 
     grouped["fetchedAt"] = board.get("fetchedAt") or datetime.now(timezone.utc).isoformat()
     grouped["source"] = source
@@ -180,10 +187,24 @@ def _richness(d: dict[str, Any]) -> int:
     return (1 if d.get("arrivals") else 0) + (1 if d.get("connection") else 0)
 
 
+def _drop_departed(deps: list[dict[str, Any]], grace_seconds: float = 90.0) -> list[dict[str, Any]]:
+    cutoff = datetime.now(timezone.utc).timestamp() - grace_seconds
+    out = []
+    for d in deps:
+        when = _parse_iso(d.get("when") or d.get("plannedWhen"))
+        if when is None or when.timestamp() >= cutoff:
+            out.append(d)
+    return out
+
+
 def _group(deps: list[dict[str, Any]], stale: bool = False) -> dict[str, Any]:
     south: list[dict[str, Any]] = []
     north: list[dict[str, Any]] = []
     for d in deps:
+        # City buses share the station but not the widget ("Zolling, Freisinger
+        # Straße" would even match the Freising keyword).
+        if (d.get("product") or "").lower() == "bus":
+            continue
         enriched = {
             **d,
             "terminatesAtFreising": _terminates_at_freising(d.get("direction")),
