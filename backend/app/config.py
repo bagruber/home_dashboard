@@ -4,8 +4,10 @@ from dataclasses import dataclass
 from dotenv import load_dotenv
 
 # Load backend/.env (gitignored) before reading any env vars. Allows local secrets
-# (e.g. DASHBOARD_DHL_API_KEY) to live in a file instead of the launcher script.
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), os.pardir, ".env"))
+# (e.g. DASHBOARD_17TRACK_API_KEY) to live in a file instead of the launcher script.
+# override=True: the file wins over values inherited from the parent process —
+# otherwise uvicorn's --reload supervisor pins workers to a stale environment.
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), os.pardir, ".env"), override=True)
 
 
 @dataclass(frozen=True)
