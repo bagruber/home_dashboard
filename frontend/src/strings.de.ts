@@ -135,6 +135,11 @@ export const t = {
       hourLabel: (d: Date) =>
         new Intl.DateTimeFormat("de-DE", { hour: "2-digit", timeZone: "Europe/Berlin" }).format(d),
       hourlyTitle: "Nächste 12 Stunden",
+      radarClose: "Nah",
+      radarWide: "50 km",
+      radarForecast: "Prognose",
+      radarSlider: "Radar-Zeitpunkt",
+      radarAttribution: "RainViewer · © OSM/Carto",
     },
     trains: {
       title: "Abfahrten Moosburg",

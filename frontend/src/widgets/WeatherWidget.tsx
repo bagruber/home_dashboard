@@ -7,6 +7,7 @@ import {
 } from "../lib/weather";
 import { useElementSize } from "../lib/useElementSize";
 import { usePolling } from "../lib/usePolling";
+import { RainRadar } from "../components/RainRadar";
 import { WidgetHeader } from "../components/WidgetHeader";
 import { t } from "../strings.de";
 
@@ -27,9 +28,11 @@ export function WeatherWidget() {
   const [ref, size] = useElementSize<HTMLDivElement>();
 
   // Density tiers by available space: current conditions always; the hourly
-  // strip and day cards join as the cell grows; narrow cells halve the hours.
+  // strip, day cards and finally the rain radar join as the cell grows;
+  // narrow cells halve the hours.
   const showDays = size.height >= 240;
   const showHourly = size.height >= 170;
+  const showRadar = size.height >= 430;
   const hourStep = size.width > 0 && size.width < 340 ? 2 : 1;
 
   return (
@@ -53,6 +56,7 @@ export function WeatherWidget() {
               ))}
             </div>
           )}
+          {showRadar && <RainRadar />}
         </div>
       )}
     </div>
