@@ -27,12 +27,19 @@ export function WeatherWidget() {
   const { data, error } = usePolling<WeatherResponse>(fetchWeather, REFRESH_MS);
   const [ref, size] = useElementSize<HTMLDivElement>();
 
-  // Density tiers by available space: current conditions always; the hourly
-  // strip, day cards and finally the rain radar join as the cell grows;
-  // narrow cells halve the hours.
-  const showDays = size.height >= 240;
+  // size is measured inside the dashboard's zoom wrapper, i.e. in local px —
+  // the right unit for "what fits" (fonts scale along). The radar decision is
+  // about the widget's real on-screen estate though, so factor the zoom out.
+  const zoomFactor =
+    (ref.current && (ref.current as HTMLElement & { currentCSSZoom?: number }).currentCSSZoom) || 1;
+  const physicalHeight = size.height * zoomFactor;
+
+  // Density tiers: current conditions always; the hourly strip, day cards and
+  // finally the rain radar join as the cell grows; narrow cells halve the hours.
   const showHourly = size.height >= 170;
-  const showRadar = size.height >= 430;
+  const showRadar = physicalHeight >= 430;
+  // When the radar squeezes into a locally tight cell, the day cards yield.
+  const showDays = size.height >= 240 && (!showRadar || size.height >= 470);
   const hourStep = size.width > 0 && size.width < 340 ? 2 : 1;
 
   return (
