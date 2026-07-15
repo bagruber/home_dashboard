@@ -139,7 +139,7 @@ export const t = {
       radarWide: "50 km",
       radarForecast: "Prognose",
       radarSlider: "Radar-Zeitpunkt",
-      radarAttribution: "RainViewer · © OSM/Carto",
+      radarAttribution: "© DWD · OSM/Carto",
     },
     trains: {
       title: "Abfahrten Moosburg",
