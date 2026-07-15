@@ -44,8 +44,16 @@ body {
   border-radius: 1rem;
 }
 
+/* Resize handle: above the edit-mode drag surface, and big enough for touch. */
+.react-grid-item > .react-resizable-handle {
+  z-index: 30;
+  width: 32px;
+  height: 32px;
+}
 .react-grid-item > .react-resizable-handle::after {
-  border-color: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  width: 10px !important;
+  height: 10px !important;
 }
 
 /* Touch feedback: every button gives a slight press. */

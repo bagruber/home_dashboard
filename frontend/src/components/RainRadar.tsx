@@ -8,6 +8,10 @@ const CENTER = { lat: 48.4673, lon: 11.9333 };
 const CLOSE_ZOOM = 10; // roughly ±20 km around Moosburg
 const WIDE_ZOOM = 8; // roughly ±80 km — rain fronts approaching
 const TILE = 256;
+// RainViewer's free tile cache tops out at zoom 7 ("Zoom level not supported"
+// beyond) — fetch the sharpest 512px source there and upscale onto the map.
+const RADAR_ZOOM = 7;
+const RADAR_SRC = 512;
 const FRAMES_URL = "https://api.rainviewer.com/public/weather-maps.json";
 const REFRESH_MS = 10 * 60_000;
 
@@ -48,8 +52,10 @@ interface TilePos {
   y: number;
 }
 
-/** Web-Mercator tiles covering a w×h viewport centered on CENTER. */
-function tilesFor(w: number, h: number, z: number): TilePos[] {
+/** Web-Mercator tiles covering a w×h viewport centered on CENTER, displayed at
+ *  zoom z but sourced from tileZoom (lower tileZoom → tiles drawn upscaled). */
+function tileGrid(w: number, h: number, z: number, tileZoom: number) {
+  const drawSize = TILE * 2 ** (z - tileZoom); // on-screen px per source tile
   const scale = TILE * 2 ** z;
   const cx = ((CENTER.lon + 180) / 360) * scale;
   const latRad = (CENTER.lat * Math.PI) / 180;
@@ -57,12 +63,12 @@ function tilesFor(w: number, h: number, z: number): TilePos[] {
   const left = cx - w / 2;
   const top = cy - h / 2;
   const tiles: TilePos[] = [];
-  for (let tx = Math.floor(left / TILE); tx * TILE < left + w; tx++) {
-    for (let ty = Math.floor(top / TILE); ty * TILE < top + h; ty++) {
-      tiles.push({ tx, ty, x: tx * TILE - left, y: ty * TILE - top });
+  for (let tx = Math.floor(left / drawSize); tx * drawSize < left + w; tx++) {
+    for (let ty = Math.floor(top / drawSize); ty * drawSize < top + h; ty++) {
+      tiles.push({ tx, ty, x: tx * drawSize - left, y: ty * drawSize - top });
     }
   }
-  return tiles;
+  return { tiles, drawSize };
 }
 
 /** Live rain radar (RainViewer, no API key) on a dark Carto basemap.
@@ -80,32 +86,42 @@ export function RainRadar() {
   const frame = frames[idx];
   const z = wide ? WIDE_ZOOM : CLOSE_ZOOM;
 
-  const tiles = useMemo(
-    () => (size.width > 0 && size.height > 0 ? tilesFor(size.width, size.height, z) : []),
+  const base = useMemo(
+    () =>
+      size.width > 0 && size.height > 0
+        ? tileGrid(size.width, size.height, z, z)
+        : { tiles: [], drawSize: TILE },
+    [size.width, size.height, z],
+  );
+  const radar = useMemo(
+    () =>
+      size.width > 0 && size.height > 0
+        ? tileGrid(size.width, size.height, z, RADAR_ZOOM)
+        : { tiles: [], drawSize: TILE },
     [size.width, size.height, z],
   );
 
   return (
     <div className="flex-1 min-h-0 flex flex-col gap-1.5 no-drag">
       <div ref={ref} className="relative flex-1 min-h-[180px] overflow-hidden rounded-xl bg-white/[0.02]">
-        {tiles.map(({ tx, ty, x, y }) => (
+        {base.tiles.map(({ tx, ty, x, y }) => (
           <img
             key={`base-${z}-${tx}-${ty}`}
             src={`https://${"abcd"[(tx + ty) % 4]}.basemaps.cartocdn.com/dark_all/${z}/${tx}/${ty}.png`}
             className="absolute max-w-none"
-            style={{ left: x, top: y, width: TILE, height: TILE }}
+            style={{ left: x, top: y, width: base.drawSize, height: base.drawSize }}
             alt=""
             draggable={false}
           />
         ))}
         {frame &&
           data &&
-          tiles.map(({ tx, ty, x, y }) => (
+          radar.tiles.map(({ tx, ty, x, y }) => (
             <img
-              key={`radar-${z}-${tx}-${ty}-${frame.path}`}
-              src={`${data.host}${frame.path}/${TILE}/${z}/${tx}/${ty}/2/1_1.png`}
+              key={`radar-${tx}-${ty}-${frame.path}`}
+              src={`${data.host}${frame.path}/${RADAR_SRC}/${RADAR_ZOOM}/${tx}/${ty}/2/1_1.png`}
               className="absolute max-w-none opacity-70"
-              style={{ left: x, top: y, width: TILE, height: TILE }}
+              style={{ left: x, top: y, width: radar.drawSize, height: radar.drawSize }}
               alt=""
               draggable={false}
             />

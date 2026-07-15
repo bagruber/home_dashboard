@@ -127,7 +127,6 @@ export function Dashboard() {
             isDraggable={editMode}
             isResizable={editMode}
             compactType={null}
-            preventCollision
             onLayoutChange={applyLayoutChange}
             draggableCancel=".no-drag"
           >
@@ -159,10 +158,16 @@ export function Dashboard() {
                       onClick={() => setMaximizedId(w.id)}
                       aria-label={t.edit.maximize}
                       title={t.edit.maximize}
-                      className="no-drag absolute bottom-1.5 right-1.5 z-10 p-2 rounded-lg bg-white/[0.05] text-ink-low opacity-60 hover:opacity-100 hover:text-ink-high hover:bg-white/10 transition"
+                      className="no-drag absolute bottom-2 right-2 z-10 p-2.5 rounded-lg bg-white/10 ring-1 ring-white/10 text-ink-mid hover:text-ink-high hover:bg-white/[0.16] transition"
                     >
                       <ExpandIcon />
                     </button>
+                  )}
+                  {editMode && (
+                    // Transparent drag surface: in edit mode the whole card is
+                    // grabbable (widget interactions are disabled); only the
+                    // resize handle (z-30, see index.css) sits above it.
+                    <div className="absolute inset-0 z-20 cursor-move" />
                   )}
                 </div>
               );
@@ -209,7 +214,7 @@ export function Dashboard() {
 
 function ExpandIcon() {
   return (
-    <svg viewBox="0 0 16 16" width="13" height="13" aria-hidden>
+    <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden>
       <path
         d="M9.5 2.5h4v4M13 3L9 7M6.5 13.5h-4v-4M3 13l4-4"
         stroke="currentColor"
