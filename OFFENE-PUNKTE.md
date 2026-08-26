@@ -11,6 +11,9 @@ Dieses Repo laeuft seit dem 26.08.2026 auf **pnpm** (nicht npm) — betroffen is
 Versionen uebereinstimmen. **Einzelne Pakete also nicht im Alleingang
 hochziehen** — das faellt allen anderen Repos zur Last.
 
+Die projektweiten Zielversionen stehen in `hausbasis/baseline.json`;
+`node ../hausbasis/check.mjs --kurz` zeigt, wo dieses Repo abweicht.
+
 ## Versions-Update steht aus — siehe VERSION-UPGRADE.md
 
 Dieses Repo ist als eines der letzten **nicht** auf der projektweiten Hausbasis
