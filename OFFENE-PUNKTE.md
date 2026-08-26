@@ -6,8 +6,8 @@ nicht abhaken — die Datei soll kurz bleiben.*
 
 ## Toolchain-Stand
 
-Dieses Repo laeuft seit dem 26.08.2026 auf **pnpm** (nicht npm) — betroffen ist `frontend/`.
-Alle Repos teilen sich einen pnpm-Store, der genau so weit dedupliziert, wie die
+Dieses Repo laeuft seit dem 26.08.2026 auf **pnpm** (nicht npm) — betroffen ist
+`frontend/`. Alle Repos teilen sich einen pnpm-Store, der so weit dedupliziert, wie die
 Versionen uebereinstimmen. **Einzelne Pakete also nicht im Alleingang
 hochziehen** — das faellt allen anderen Repos zur Last.
 
