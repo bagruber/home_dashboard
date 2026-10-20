@@ -1,7 +1,7 @@
 # Versions-Update — home_dashboard/frontend
 
 *Briefing fuer eine eigene Claude-Code-Sitzung in diesem Repo. Angelegt 26.08.2026,
-nach Welle 1 und 2 fortgeschrieben. Nach erledigtem Update loeschen.*
+fortgeschrieben am 20.10.2026. Nach erledigtem Update loeschen.*
 
 ## Auftrag
 
@@ -11,7 +11,26 @@ gemeinsamen pnpm-Store, der exakt so weit dedupliziert, wie die Versionen
 uebereinstimmen. Gemessen: ein Repo mit abweichenden Versionen kostet ~158 MB, ein
 Versions-Zwilling ~8 MB.
 
-**Dieses Repo ist eines der letzten drei.** pridemap ist am 26.08.2026 auf React 19.2.8, Vite 8.2.2 und plugin-react 6.1.0 gezogen worden — Build und Laufzeitprobe gruen. Der aufwendigste der vier, deshalb zuletzt in Welle 3.
+**Dieses Repo ist eines der letzten zwei**, zusammen mit `etymology`. Die beiden
+sind der Grund, warum von TypeScript, Vite, React und den React-Typen noch je ein
+zweiter Stand im Store liegt; Tailwind 3 haelt nur dieses Repo offen. Der
+aufwendigste Fall, weil Tailwind 4 eine Migration ist und keine Versionsnummer.
+
+## Was seit August dazukam (20.10.2026)
+
+- **Die Ziele sind gestiegen**: React 19.3, Vite 8.3 (Tabelle unten). Die
+  uebrigen Repos stehen darauf, mit Build, Tests und Screenshot-Vergleich gruen.
+- **React 19.3 bricht gegenueber 19.2 nichts.** Der eigentliche Sprung hier ist
+  18 -> 19. Am 20.10.2026 geprueft: `createRoot` ist schon da, `ReactDOM.render`,
+  `defaultProps`, `propTypes` und `findDOMNode` kommen im eigenen Code nicht vor.
+  `forwardRef` (zweimal) funktioniert in 19 weiter.
+- **`react-grid-layout` steht auf 1.5.4, aktuell ist 2.3.0.** Die Peers von 1.5
+  erlauben React 19, aber das Paket zieht und skaliert ueber `react-draggable` und
+  `react-resizable` direkt am DOM. Ob Ziehen und Groessenaendern unter React 19
+  noch gehen, zeigt nur die Laufzeitprobe mit echter Maus. 2.x ist ein eigener
+  Major und gehoert nicht in denselben Durchgang.
+- **Tailwind 4 im Haus heisst**: `tailwindcss` ^4.3.3 und `@tailwindcss/vite`
+  ^4.3.3, kein PostCSS-Plugin. So laufen alle zehn anderen Tailwind-Repos.
 
 ## Was bereits steht (26.08.2026)
 
@@ -37,26 +56,20 @@ Erfahrungen daraus, die fuer dieses Repo relevant sind:
 - **Vite 8 und plugin-react 6 verlangen Node ^20.19 oder >=22.12.** Die CI-Workflows
   stehen auf `node-version: 22`, was aktuelle 22.x aufloest und damit passt.
 
-## Hausbasis
-
-| Paket | Zielversion | Stand |
-|---|---|---|
-| typescript | ~7.0.2 | erledigt in 13 Repos |
-| @types/node | ^26.3.0 | erledigt in 13 Repos |
-| vite | ^8.2.2 | erledigt in 12 Repos |
-| @vitejs/plugin-react | ^6.1.0 | erledigt in 12 Repos |
-| react / react-dom | 19.2.x | hier offen |
-| tailwindcss | 4.x | nur home_dashboard offen |
-| react-router-dom | 7.x | nur etymology offen |
-
 ## Noch zu tun in diesem Repo
+
+Die Zielversionen stehen in `../../hausbasis/baseline.json`, und
+`node ../../hausbasis/check.mjs --kurz` zeigt, wo dieses Repo abweicht. Gilt bei
+Abweichung die Baseline, nicht diese Tabelle. Stand 20.10.2026:
 
 | Paket | Ist | Ziel |
 |---|---|---|
-| `react / react-dom` | ^18.3.1 | ^19.2.x |
-| `tailwindcss` | ^3.4.13 | ^4.x |
-| `vite` | ^5.4.8 | ^8.2.2 |
-| `@vitejs/plugin-react` | ^4.3.2 | ^6.1.0 |
+| `react / react-dom` | ^18.3.1 | ^19.3.1 |
+| `@types/react / @types/react-dom` | ^18.3.x | ^19.3.0 |
+| `tailwindcss` | ^3.4.13 | ^4.3.3, dazu `@tailwindcss/vite` ^4.3.3 |
+| `postcss`, `autoprefixer` | ^8.4 / ^10.4 | entfallen mit Tailwind 4 |
+| `vite` | ^5.4.8 | ^8.3.4 |
+| `@vitejs/plugin-react` | ^4.3.2 | ^6.1.2 |
 | `typescript` | ^5.6.2 | ~7.0.2 |
 
 ## Besonderheit
